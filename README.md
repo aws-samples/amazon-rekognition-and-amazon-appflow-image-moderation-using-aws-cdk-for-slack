@@ -1,5 +1,5 @@
 
-# Amazon Rekognition and Amazon AppFlow Slack image moderation using AWS CDK constructs
+# Leveraging Amazon Rekognition and Amazon AppFlow for Slack image moderation using AWS Solutions Constructs
 
 # Table of Contents
 1. [Overview](#overview)
@@ -8,7 +8,7 @@
     3. [Architecture Diagram](#architecture-diagram)
 2. [Requirements](#requirements)
     1. [General](#general)
-    2. [Slack](#slack)
+    2. [Slack](#slack-app)
     3. [AWS CDK](#aws-cdk)
     4. [Environment Variable Prep](#environment-variable-prep)
 3. [Deployment](#deployment) 
@@ -47,9 +47,9 @@ These guidelines can be customized in the [process-new-images/index.py](process-
 * AWS CLI [installed](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
 * A [Slack workspace](https://slack.com/help/articles/206845317-Create-a-Slack-workspace) that you have permissions to create an App in
 
-### Slack
-Create a Slack App and install the Slack App into your Slack Workspace 
-Follow the steps in the "Creating the Slack App in your Slack workspace" section of the Moderating Image Content in Slack with Amazon Rekognition and Amazon AppFlow [Technical Guide](https://docs.aws.amazon.com/whitepapers/latest/moderating-image-content-in-slack/creating-the-slack-app-in-your-slack-workspace.html)
+### Slack app
+Create a [Slack app](https://api.slack.com/start) and install the Slack app into your Slack workspace 
+Follow the steps in the "Creating the Slack app in your Slack workspace" section of the Moderating Image Content in Slack with Amazon Rekognition and Amazon AppFlow [Technical Guide](https://docs.aws.amazon.com/whitepapers/latest/moderating-image-content-in-slack/creating-the-slack-app-in-your-slack-workspace.html)
 
 In your Slack Workspace, create a channel called 'testing-slack-moderation' (or something else you prefer)
 
@@ -57,14 +57,14 @@ In your Slack Workspace, create a channel called 'testing-slack-moderation' (or 
 Install the AWS CDK - [Getting Started Guide](https://docs.aws.amazon.com/cdk/latest/guide/getting_started.html)
 
 ### Environment Variable Prep
-Export the following environment variables in your terminal session. These are used by the CDK to configure the solution. 
+Export the following environment variables in your terminal session. These are used by the CDK to configure the solution during deployment. 
 
-* SlackClientID (Obtained from the steps above when creating your Slack App)
-* SlackClientSecret (Obtained from the steps above when creating your Slack App)
-* SlackWorkspaceInstanceURL (Based on your Slack Workspace name)
-* SlackChannelParamID (Obtained by navigating to your Workspace and Channel in the [web interface of Slack](https://app.slack.com/). It is the last portion of the URL (following the last forward slash) )
+* SlackClientID (Obtained from the steps above when creating your Slack app)
+* SlackClientSecret (Obtained from the steps above when creating your Slack app)
+* SlackWorkspaceInstanceURL (Based on your Slack workspace name)
+* SlackChannelParamID (Obtained by navigating to your Slack workspace and channel in the [web interface of Slack](https://app.slack.com/). It is the last portion of the URL (following the last forward slash) )
 ![Channel ID](/images/channel-id.png)
-* SlackOAuthAccessToken (Obtained from your [Slack App's management page](https://api.slack.com/apps). Under the Features menu select the OAuth & Permissions option. Be sure to use the "User OAuth Token".)
+* SlackOAuthAccessToken (Obtained from your [Slack app's management page](https://api.slack.com/apps). Under the Features menu select the OAuth & Permissions option. Be sure to use the "User OAuth Token".)
 
 
 E.g.:
@@ -108,28 +108,51 @@ cdk deploy
 ### Trigger Violations
 Post the following images to the moderated Slack Channel:
 
-This image contains the disallowed word "private": [https://i.imgur.com/uuAY133.png](https://i.imgur.com/662ptww.png)
+This image contains the disallowed word "private": [https://i.imgur.com/uuAY133.png](https://i.imgur.com/uuAY133.png)
 
 This image which contains the disallowed "Tobacco" theme: [https://i.imgur.com/XgAtyWU.png](https://i.imgur.com/662ptww.png)
 
-Notes:
+Note:
 
-If you are pasting the same link numerous times during testing, you may receive a "Pssst! I didn’t unfurl <<URL>> because it was already shared in this channel quite recently (within the last hour) and I didn’t want to clutter things up." error. You will need to click "Show Preview Anyway" for the image to be processed again.
+If you are pasting the same link numerous times during testing, you may receive a "Pssst! I didn’t unfurl <<URL>> because it was already shared in this channel quite recently ..." error. You will need to click "Show Preview Anyway" for the image to be processed again.
 
 Avoid using images over 2 MB because Slack doesn't expand them by default. 
 
 ### Checking results
+
+Wait approximately 2 mins and then check the "new-violation-findings" SQS Queue. 
+
+In the AWS Console, navigate to Amazon SQS --> Queues -->new-violation-findings
+
+![SQS Queue](images/sqsqueue1.png?raw=true)
+
+Click "Send and receive messages" 
+
+Scroll down the the Receive Messages window and click "Poll for messages" 
+
+![SQS Queue](images/sqsqueue2.png?raw=true)
+
+From there, you can select a message and view its details
+
+![SQS Queue](images/sqsqueue3.png?raw=true)
+
+You can get more information by selection the Attributes menu
+
+![SQS Queue](images/sqsqueue4.png?raw=true)
+
+You can also use the following to check violations via the CLI: 
+
 Set your AWS ACCOUNT ID
 ```
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 ```
 
-Set and export your default region to the region of your choice
+Set and export your default region to the region of your choice. - Ex:
 ```
 export AWS_REGION=us-east-1
 ```
 
-Wait approximately 2 mins and then check the "new-violation-findings" SQS Queue:
+Run the following command to retrieve messages: 
 ```
 aws sqs receive-message --queue-url https://sqs.$AWS_REGION.amazonaws.com/$AWS_ACCOUNT_ID/new-violation-findings --attribute-names All --message-attribute-names All --max-number-of-messages 10
 ```
