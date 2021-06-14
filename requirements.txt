@@ -1,1 +1,14 @@
 -e .
+boto3
+aws-solutions-constructs.aws-s3-lambda
+aws_solutions_constructs.aws_lambda_sqs_lambda
+aws_solutions_constructs.aws_lambda_sqs
+aws_cdk.aws_appflow
+aws_cdk.aws_lambda
+aws_cdk.aws_s3
+aws_cdk.aws_s3_deployment
+aws_cdk.aws_sqs
+aws_cdk.cloudformation-include
+aws_cdk.custom_resources
+aws_cdk.aws_logs
+
