@@ -11,7 +11,7 @@ from aws_cdk import (
     aws_appflow,
     custom_resources,
     aws_logs as logs,
-    core as cdk
+    core as cdk,
 )
 
 from aws_solutions_constructs import (
@@ -81,8 +81,8 @@ class AmazonRekognitionAndAmazonAppflowImageModerationUsingAwsCdkForSlackStack(c
         # Grant the Lambda Function access to Rekognition by adding the managed policy to the execution role
         LambdaToSqsToLambdaPattern.consumer_lambda_function.add_to_role_policy(aws_iam.PolicyStatement(
             effect=aws_iam.Effect.ALLOW,
-            resources=["*"],
-            actions=["rekognition:*"])
+            resources=["*"], # There aren't any Rekognition resource that we can use for the Detect* Actions https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazonrekognition.html#amazonrekognition-resources-for-iam-policies
+            actions=["rekognition:Detect*"])
         )
 
         lambda_sqs.LambdaToSqs(
@@ -254,7 +254,7 @@ class AmazonRekognitionAndAmazonAppflowImageModerationUsingAwsCdkForSlackStack(c
         appflow_policy_statement = aws_iam.PolicyStatement(
             actions=["appflow:StartFlow","appflow:StopFlow"],
             effect=aws_iam.Effect.ALLOW,
-            resources=["*"], # In Prod, this should be limited to the Arn with something like - appFlow.get_att("FlowArn").to_string()
+            resources=["arn:" + cdk.Aws.PARTITION + ":appflow:" + cdk.Aws.REGION + ":" + cdk.Aws.ACCOUNT_ID + ":flow/" + appFlow.flow_name],
         )
 
         appflow_policy = custom_resources.AwsCustomResourcePolicy.from_statements(
